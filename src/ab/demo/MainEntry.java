@@ -136,9 +136,13 @@ public class MainEntry {
 						else 
 							System.out.println("Please input the correct command");
 		}
-		else 
-			System.out.println("Please input the correct command");
-		
+		else {
+			System.out.println("Running default command: server & naive agent");
+
+			NaiveAgent na = new NaiveAgent();
+			na.run();
+		}
+
 
 	}
 }
