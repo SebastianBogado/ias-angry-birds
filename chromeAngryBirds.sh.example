@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+
+echo -n "Closing every Chrome instance. "
+killall chrome
+echo "Done."
+
+CHROME_DEFAULT_PROFILE="$HOME/.config/google-chrome/Default"
+CHROME_DEFAULT_PROFILE_CACHE="$CHROME_DEFAULT_PROFILE/Application Cache"
+CHROME_DEFAULT_PROFILE_CACHE_BACKUP="$CHROME_DEFAULT_PROFILE/Application Cache Original"
+
+if [ ! -d "$CHROME_DEFAULT_PROFILE_CACHE_BACKUP" ]; then
+  echo -n "Creating backup of the original cache. "
+  cp -r "$CHROME_DEFAULT_PROFILE_CACHE" "$CHROME_DEFAULT_PROFILE_CACHE_BACKUP"
+  echo "Done."
+fi
+
+echo -n "Replacing cache with Angry Bird's cache. "
+cp -r "Application Cache" "$CHROME_DEFAULT_PROFILE"
+echo "Done."
+
+echo "Running Chrome"
+google-chrome http://chrome.angrybirds.com > /dev/null 2>&1 &
+
