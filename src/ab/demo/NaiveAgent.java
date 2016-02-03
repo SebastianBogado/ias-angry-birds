@@ -168,14 +168,13 @@ public class NaiveAgent implements Runnable {
 					ArrayList<Point> pts = tp.estimateLaunchPoint(sling, _tpt);
 					
 					// do a high shot when entering a level to find an accurate velocity
-					if (firstShot && pts.size() > 1) 
-					{
+					if (firstShot && pts.size() > 1) {
 						releasePoint = pts.get(1);
 					}
-					else if (pts.size() == 1)
+					else if (pts.size() == 1) {
 						releasePoint = pts.get(0);
-					else if (pts.size() == 2)
-					{
+					}
+					else if (pts.size() == 2) {
 						// randomly choose between the trajectories, with a 1 in
 						// 6 chance of choosing the high one
 						if (randomGenerator.nextInt(6) == 0)
@@ -183,9 +182,7 @@ public class NaiveAgent implements Runnable {
 						else
 							releasePoint = pts.get(0);
 					}
-					else
-						if(pts.isEmpty())
-						{
+					else if(pts.isEmpty()) {
 							System.out.println("No release point found for the target");
 							System.out.println("Try a shot with 45 degree");
 							releasePoint = tp.findReleasePoint(sling, Math.PI/4);
@@ -238,17 +235,13 @@ public class NaiveAgent implements Runnable {
 					screenshot = ActionRobot.doScreenShot();
 					vision = new Vision(screenshot);
 					Rectangle _sling = vision.findSlingshotMBR();
-					if(_sling != null)
-					{
+					if(_sling != null) {
 						double scale_diff = Math.pow((sling.width - _sling.width),2) +  Math.pow((sling.height - _sling.height),2);
-						if(scale_diff < 25)
-						{
-							if(dx < 0)
-							{
+						if(scale_diff < 25) {
+							if(dx < 0) {
 								aRobot.cshoot(shot);
 								state = aRobot.getState();
-								if ( state == GameState.PLAYING )
-								{
+								if ( state == GameState.PLAYING ) {
 									screenshot = ActionRobot.doScreenShot();
 									vision = new Vision(screenshot);
 									List<Point> traj = vision.findTrajPoints();
@@ -271,7 +264,6 @@ public class NaiveAgent implements Runnable {
 	}
 
 	public static void main(String args[]) {
-		System.out.println("Rasdfasdfa");
 
 		NaiveAgent na = new NaiveAgent();
 		if (args.length > 0)

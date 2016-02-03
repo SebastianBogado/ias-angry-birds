@@ -3,6 +3,7 @@ package ab.demo;
 import ab.planner.abTrajectory;
 import ab.utils.GameImageRecorder;
 import ab.vision.ShowSeg;
+import ar.fi.uba.celdas.IntelligentAutonomousAgent;
 
 /*****************************************************************************
  ** ANGRYBIRDS AI AGENT FRAMEWORK
@@ -137,10 +138,10 @@ public class MainEntry {
 							System.out.println("Please input the correct command");
 		}
 		else {
-			System.out.println("Running default command: server & naive agent");
+			System.out.println("Running default command: server & intelligent autonomous agent");
 
-			NaiveAgent na = new NaiveAgent();
-			na.run();
+			IntelligentAutonomousAgent iaa = new IntelligentAutonomousAgent();
+			iaa.run();
 		}
 
 
