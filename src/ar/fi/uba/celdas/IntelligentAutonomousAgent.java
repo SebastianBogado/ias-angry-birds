@@ -7,6 +7,7 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
+import ar.fi.uba.celdas.ias.IntelligentAutonomousSystem;
 
 import java.awt.*;
 import java.awt.List;
@@ -26,7 +27,9 @@ public class IntelligentAutonomousAgent implements Runnable {
     TrajectoryPlanner tp;
     private boolean firstShot;
     private Point prevTarget;
-    // a standalone implementation of the Naive Agent
+    private IntelligentAutonomousSystem ias;
+
+    // a standalone implementation of the Intelligent Autonomous Agent
     public IntelligentAutonomousAgent() {
 
         aRobot = new ActionRobot();
@@ -34,6 +37,7 @@ public class IntelligentAutonomousAgent implements Runnable {
         prevTarget = null;
         firstShot = true;
         randomGenerator = new Random();
+        ias = new IntelligentAutonomousSystem();
         // --- go to the Poached Eggs episode level selection page ---
         ActionRobot.GoFromMainMenuToLevelSelection();
 
@@ -102,7 +106,6 @@ public class IntelligentAutonomousAgent implements Runnable {
 
     public GameStateExtractor.GameState solve()
     {
-
         // capture Image
         BufferedImage screenshot = ActionRobot.doScreenShot();
 
@@ -128,6 +131,7 @@ public class IntelligentAutonomousAgent implements Runnable {
 
         // if there is a sling, then play, otherwise just skip.
         if (sling != null) {
+            ias.confirmLastTheory(vision);
 
             if (!pigs.isEmpty()) {
 
@@ -135,25 +139,63 @@ public class IntelligentAutonomousAgent implements Runnable {
                 Shot shot = new Shot();
                 int dx,dy;
                 {
-                    // pick up first pig
-                    Point pigCenter = pigs.get(0).getCenter();
+                    // let the IAS decide where to shoot
+                    Point target = ias.getTarget(vision);
+
+                    prevTarget = new Point(target.x, target.y);
 
                     // estimate the trajectory
-                    ArrayList<Point> pts = tp.estimateLaunchPoint(sling, pigCenter);
+                    ArrayList<Point> pts = tp.estimateLaunchPoint(sling, target);
 
-                    releasePoint = pts.get(0);
+
+                    if (pts.isEmpty()) {
+                        System.out.println("No release point found for the target");
+                        System.out.println("Try a shot with 45 degree");
+                        releasePoint = tp.findReleasePoint(sling, Math.PI / 4);
+                    } else {
+                        // never choose high shots
+                        releasePoint = pts.get(0);
+                    }
 
                     // Get the reference point
                     Point refPoint = tp.getReferencePoint(sling);
 
-                    double releaseAngle = tp.getReleaseAngle(sling, releasePoint);
-                    System.out.println("Release Point: " + releasePoint);
-                    System.out.println("Release Angle: "
-                            + Math.toDegrees(releaseAngle));
 
-                    dx = (int)releasePoint.getX() - refPoint.x;
-                    dy = (int)releasePoint.getY() - refPoint.y;
-                    shot = new Shot(refPoint.x, refPoint.y, dx, dy);
+                    //Calculate the tapping time according the bird type
+                    if (releasePoint != null) {
+                        double releaseAngle = tp.getReleaseAngle(sling,
+                                releasePoint);
+                        System.out.println("Release Point: " + releasePoint);
+                        System.out.println("Release Angle: "
+                                + Math.toDegrees(releaseAngle));
+                        int tapInterval = 0;
+                        switch (aRobot.getBirdTypeOnSling())
+                        {
+
+                            case RedBird:
+                                tapInterval = 0; break;               // start of trajectory
+                            case YellowBird:
+                                tapInterval = 65 + randomGenerator.nextInt(25);break; // 65-90% of the way
+                            case WhiteBird:
+                                tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+                            case BlackBird:
+                                tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+                            case BlueBird:
+                                tapInterval =  65 + randomGenerator.nextInt(20);break; // 65-85% of the way
+                            default:
+                                tapInterval =  60;
+                        }
+
+                        int tapTime = tp.getTapTime(sling, releasePoint, target, tapInterval);
+                        dx = (int)releasePoint.getX() - refPoint.x;
+                        dy = (int)releasePoint.getY() - refPoint.y;
+                        shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
+                    }
+                    else
+                    {
+                        System.err.println("No Release Point Found");
+                        return state;
+                    }
                 }
 
                 // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.

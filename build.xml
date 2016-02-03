@@ -12,7 +12,7 @@
 
     <target name="compile">
         <mkdir dir="src"/>
-	 <javac srcdir="src" destdir="src" classpathref="classpath"/>
+	 <javac srcdir="src" destdir="src" debug="true" classpathref="classpath"/>
     </target>  
 
 
