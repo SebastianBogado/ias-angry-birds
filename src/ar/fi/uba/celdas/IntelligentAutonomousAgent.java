@@ -72,7 +72,8 @@ public class IntelligentAutonomousAgent implements Runnable {
                             + " Score: " + scores.get(key) + " ");
                 }
                 System.out.println("Total Score: " + totalScore);
-                aRobot.loadLevel(++currentLevel);
+//                aRobot.loadLevel(++currentLevel);
+                aRobot.loadLevel(currentLevel);
                 // make a new trajectory planner whenever a new level is entered
                 tp = new TrajectoryPlanner();
 
