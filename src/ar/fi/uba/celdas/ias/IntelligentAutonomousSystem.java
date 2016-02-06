@@ -3,6 +3,7 @@ package ar.fi.uba.celdas.ias;
 import ab.vision.ABObject;
 import ab.vision.ABType;
 import ab.vision.Vision;
+import ar.fi.uba.celdas.utils.Utils;
 
 import java.awt.*;
 import java.util.List;
@@ -18,11 +19,7 @@ public class IntelligentAutonomousSystem {
     public Point getTarget(Vision vision) {
         Theory selectedTheory;
 //        if (theories.isEmpty()) {
-            selectedTheory = new Theory();
-            selectedTheory.preconditions.add(new CountTheoryCondition(1, ABType.Pig));
-            selectedTheory.action = new HitAction();
-            selectedTheory.postconditions.add(new CountTheoryCondition(0, ABType.Pig));
-            selectedTheory.useCount++;
+            selectedTheory = buildTheory(vision);
 //        }
 
         if (selectedTheory.satisfiesPreconditions(vision)) {
@@ -45,5 +42,41 @@ public class IntelligentAutonomousSystem {
             lastTheory = null;
         }
 
+    }
+
+    /**
+     * This method builds a theory that will hit a random type and expects to kill it.
+     * It should work always, and if it doesn't then we're screwed. There's probably something
+     * in the way and we're not considering high trajectories, only direct hits.
+     * @param vision
+     * @return
+     */
+    private Theory buildTheory(Vision vision) {
+        ABType typeToHit = Utils.getRandomAvailableType(vision);
+        int totalABOjectsOfTypeToHit = Utils.getTotalABObjects(vision, typeToHit);
+
+        System.out.println("Theory Zero: going to hit " + typeToHit.name() + ", of which there are " + totalABOjectsOfTypeToHit + " total");
+
+        Theory newTheory = new Theory();
+
+        TheoryCondition atLeastOneABObjectCondition = new CountTheoryCondition()
+                .atLeast(totalABOjectsOfTypeToHit)
+                .ofType(typeToHit);
+
+        Action action = new HitAction()
+                .furtherToTheLeft()
+                .ofType(typeToHit);
+
+        TheoryCondition atLeastOneABObjecLessCondition = new CountTheoryCondition()
+                .noMoreThan(totalABOjectsOfTypeToHit - 1)
+                .ofType(typeToHit);
+
+
+        newTheory.preconditions.add(atLeastOneABObjectCondition);
+        newTheory.action = action;
+        newTheory.postconditions.add(atLeastOneABObjecLessCondition);
+        newTheory.useCount++;
+
+        return newTheory;
     }
 }

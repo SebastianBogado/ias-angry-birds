@@ -15,12 +15,14 @@ public class Theory {
     public List<TheoryCondition> postconditions;
     public int useCount;
     public int successCount;
+    public int acummulatedScore;
 
     public Theory() {
         preconditions = new ArrayList<TheoryCondition>();
         postconditions = new ArrayList<TheoryCondition>();
         useCount = 0;
         successCount = 0;
+        acummulatedScore = 0;
     }
 
     public Boolean satisfiesPreconditions(Vision vision) {
