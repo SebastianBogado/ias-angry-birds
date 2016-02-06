@@ -6,6 +6,7 @@ import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.Utils;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,11 +17,17 @@ public class IntelligentAutonomousSystem {
     List<Theory> theories;
     Theory lastTheory;
 
+    public IntelligentAutonomousSystem() {
+        theories = new ArrayList<Theory>();
+        lastTheory = null;
+    }
+
     public Point getTarget(Vision vision) {
-        Theory selectedTheory;
-//        if (theories.isEmpty()) {
+        Theory selectedTheory = findBestTheory(vision);
+
+        if (selectedTheory == null) {
             selectedTheory = buildTheory(vision);
-//        }
+        }
 
         if (selectedTheory.satisfiesPreconditions(vision)) {
             System.out.println("Theory zero satisfies");
@@ -30,12 +37,27 @@ public class IntelligentAutonomousSystem {
         return selectedTheory.action.getTarget(vision);
     }
 
+    private Theory findBestTheory(Vision vision) {
+        Theory selectedTheory = null;
+
+        for (Theory theory : theories) {
+            if (theory.satisfiesPreconditions(vision)) {
+                if (selectedTheory == null ||  theory.successCount > selectedTheory.successCount) {
+                    selectedTheory = theory;
+                }
+            }
+        }
+
+        return selectedTheory;
+    }
+
     public void confirmLastTheory(Vision vision) {
 
         if (lastTheory != null) {
             if (lastTheory.satisfiesPostconditions(vision)) {
                 System.out.println("Theory zero successful");
                 lastTheory.successCount++;
+                theories.add(lastTheory);
             } else {
                 System.out.println("Theory zero was not successful");
             }
