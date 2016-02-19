@@ -8,6 +8,10 @@ import ar.fi.uba.celdas.utils.Utils;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by seba on 2/2/16.
@@ -18,52 +22,102 @@ public class IntelligentAutonomousSystem {
     Theory lastTheory;
 
     public IntelligentAutonomousSystem() {
-        theories = new ArrayList<Theory>();
+        theories = new ArrayList<>();
         lastTheory = null;
     }
 
     public Point getTarget(Vision vision) {
-        Theory selectedTheory = findBestTheory(vision);
-
-        if (selectedTheory == null) {
-            selectedTheory = buildTheory(vision);
-        }
-
-        if (selectedTheory.satisfiesPreconditions(vision)) {
-            System.out.println("Theory zero satisfies");
-        }
-
-        lastTheory = selectedTheory;
-        return selectedTheory.action.getTarget(vision);
+        Theory localTheory = buildLocalTheory(vision);
+        lastTheory = localTheory;
+        return localTheory.action.getTarget(vision);
     }
 
-    private Theory findBestTheory(Vision vision) {
-        Theory selectedTheory = null;
+    public void confirmLastTheory(Vision vision, int score) {
+        if (lastTheory == null) {
+            System.out.println("ERROR: there's no theory to confirm. TODO: define what to do here");
+            return;
+        }
 
-        for (Theory theory : theories) {
-            if (theory.satisfiesPreconditions(vision)) {
-                if (selectedTheory == null ||  theory.successCount > selectedTheory.successCount) {
-                    selectedTheory = theory;
+        confirmTheory(lastTheory, true, vision, score);
+
+        lastTheory = null;
+    }
+
+    private void confirmTheory(Theory theory, Boolean mutate, Vision vision, int score) {
+        theory.postconditions.addAll(describeWorld(vision));
+
+        List<Theory> equalTheories = getEqualTheories(theory);
+        List<Theory> similarTheories = getSimilarTheories(theory);
+        List<Theory> mutantTheories;
+
+        if (!equalTheories.isEmpty()) {
+
+            for (Theory equalTheory : equalTheories) {
+                equalTheory.successCount += 1;
+                equalTheory.useCount += 1;
+                equalTheory.acummulatedScore += score;
+            }
+
+            for (Theory similarTheory : similarTheories) {
+                similarTheory.useCount += 1;
+                similarTheory.acummulatedScore += score;
+            }
+
+        } else if (!similarTheories.isEmpty()) {
+            theories.add(lastTheory);
+            lastTheory.successCount = 1;
+            lastTheory.useCount = similarTheories.get(0).useCount + 1;
+            lastTheory.acummulatedScore += score;
+
+            for (Theory similarTheory : similarTheories) {
+                similarTheory.useCount += 1;
+            }
+
+            if (mutate) {
+                mutantTheories = generateMutantTheories(lastTheory);
+
+                for (Theory mutantTheory : mutantTheories) {
+                    confirmTheory(mutantTheory, false, vision, score);
                 }
             }
-        }
 
-        return selectedTheory;
+        } else {
+            System.out.println("ERROR: there are no similar theories. TODO: define what to do here");
+        }
     }
 
-    public void confirmLastTheory(Vision vision) {
 
-        if (lastTheory != null) {
-            if (lastTheory.satisfiesPostconditions(vision)) {
-                System.out.println("Theory zero successful");
-                lastTheory.successCount++;
-                theories.add(lastTheory);
-            } else {
-                System.out.println("Theory zero was not successful");
-            }
-            lastTheory = null;
-        }
+    private Theory buildLocalTheory(Vision vision) {
+        Theory localTheory;
 
+        ABType typeToHit = Utils.getRandomAvailableType(vision);
+        localTheory = new Theory();
+
+        Action action = new HitAction()
+                .furtherToTheLeft()
+                .ofType(typeToHit);
+
+        localTheory.preconditions.addAll(describeWorld(vision));
+        localTheory.action = action;
+
+        return localTheory;
+    }
+
+    private List<Theory> getEqualTheories(Theory localTheory) {
+        return theories.stream()
+                .filter(theory -> theory.equals(localTheory))
+                .collect(toList());
+    }
+
+    private List<Theory> getSimilarTheories(Theory localTheory) {
+        return theories.stream()
+                .filter(theory -> theory.similar(localTheory))
+                .collect(toList());
+    }
+
+    private List<Theory> generateMutantTheories(Theory localTheory) {
+        List<Theory> mutantTheories = new ArrayList<>();
+        return mutantTheories;
     }
 
     /**
@@ -100,5 +154,30 @@ public class IntelligentAutonomousSystem {
         newTheory.useCount++;
 
         return newTheory;
+    }
+
+    private Theory findBestTheory(Vision vision) {
+
+        Optional<Theory> theoryOptional = theories.stream()
+                .filter(theory -> theory.satisfiesPreconditions(vision))
+                .sorted(comparing(Theory::successRatio))
+                .findFirst();
+
+        return theoryOptional.isPresent() ? theoryOptional.get() : null;
+    }
+
+
+    private List<TheoryCondition> describeWorld(Vision vision) {
+        List<TheoryCondition> conditions = new ArrayList<TheoryCondition>();
+
+        for (ABType type : Utils.getAvailableTypes(vision)) {
+            TheoryCondition condition = new CountTheoryCondition()
+                    .exactly(Utils.getTotalABObjects(vision, type))
+                    .ofType(type);
+
+            conditions.add(condition);
+        }
+
+        return conditions;
     }
 }

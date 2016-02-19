@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class HitAction implements Action {
 
-    ABType type;
+    public ABType type;
 
-    Boolean furtherToTheLeft;
+    public Boolean furtherToTheLeft;
 
     public HitAction() {
         type = Utils.ANY_TYPE;
@@ -57,5 +57,19 @@ public class HitAction implements Action {
         furtherToTheLeft = true;
 
         return this;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        HitAction other = (HitAction) obj;
+
+        return this.type == other.type &&
+                this.furtherToTheLeft == other.furtherToTheLeft;
     }
 }

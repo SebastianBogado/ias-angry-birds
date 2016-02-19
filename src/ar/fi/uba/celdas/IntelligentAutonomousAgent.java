@@ -132,7 +132,7 @@ public class IntelligentAutonomousAgent implements Runnable {
 
         // if there is a sling, then play, otherwise just skip.
         if (sling != null) {
-            ias.confirmLastTheory(vision);
+            ias.confirmLastTheory(vision, new GameStateExtractor().getScoreInGame(screenshot));
 
             if (!pigs.isEmpty()) {
 
