@@ -1,6 +1,5 @@
 package ar.fi.uba.celdas.ias;
 
-import ab.vision.ABObject;
 import ab.vision.ABType;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.Utils;
@@ -10,13 +9,13 @@ import ar.fi.uba.celdas.utils.Utils;
  */
 public class CountTheoryCondition implements TheoryCondition {
 
-    int count;
-    ABType type;
+    public int count;
+    public ABType type;
 
-    Boolean negate;
-    Boolean greaterOrEqualThan;
-    Boolean lessOrEqualThan;
-    Boolean equalThan;
+    public Boolean negate;
+    public Boolean greaterOrEqualThan;
+    public Boolean lessOrEqualThan;
+    public Boolean equalThan;
 
     public static int ANY_COUNT = -1;
 
@@ -78,6 +77,29 @@ public class CountTheoryCondition implements TheoryCondition {
         }
 
         return negate ? !countSatisfies : countSatisfies;
+    }
+
+    @Override
+    public Boolean isMoreSpecific(TheoryCondition other) {
+        return this.equals(other);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        CountTheoryCondition other = (CountTheoryCondition) obj;
+
+        return this.count == other.count &&
+                this.type == other.type &&
+                this.negate == other.negate &&
+                this.greaterOrEqualThan == other.greaterOrEqualThan &&
+                this.lessOrEqualThan == other.lessOrEqualThan &&
+                this.equalThan == other.equalThan;
     }
 
     private void setCount(int _count, Boolean _greaterOrEqualThan, Boolean _lessOrEqualThan, Boolean _equalThan) {

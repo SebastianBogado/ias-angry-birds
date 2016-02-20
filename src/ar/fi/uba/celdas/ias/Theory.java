@@ -4,6 +4,7 @@ import ab.vision.Vision;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Created by seba on 2/2/16.
@@ -25,6 +26,10 @@ public class Theory {
         acummulatedScore = 0;
     }
 
+    public double successRatio() {
+        return (float)successCount / useCount;
+    }
+
     public Boolean satisfiesPreconditions(Vision vision) {
         return satisfiesConditions(vision, preconditions);
     }
@@ -41,5 +46,39 @@ public class Theory {
             doesSatisfy = conditions.get(i++).satisfies(vision);
 
         return doesSatisfy;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Theory other = (Theory) obj;
+
+        Stream<TheoryCondition> otherPreconditionsStream = other.preconditions.stream();
+        boolean preconditionsAreEqual = this.preconditions.stream()
+                .allMatch(myPrecondition ->
+                                other.preconditions.stream().anyMatch(precondition ->
+                                        myPrecondition.equals(precondition) || myPrecondition.isMoreSpecific(precondition))
+                );
+
+
+        return preconditionsAreEqual && similar(other);
+    }
+
+    public boolean similar(Theory other) {
+        boolean actionsAreEqual = this.action.equals(other.action);
+
+        Stream<TheoryCondition> otherPostconditionsStream = other.postconditions.stream();
+        boolean postconditionsAreEqual = this.postconditions.stream()
+                .allMatch(myPostcondition ->
+                                other.postconditions.stream().anyMatch(postcondition ->
+                                        myPostcondition.equals(postcondition) || myPostcondition.isMoreSpecific(postcondition))
+                );
+
+        return actionsAreEqual && postconditionsAreEqual;
     }
 }

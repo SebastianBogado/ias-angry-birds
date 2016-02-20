@@ -10,7 +10,6 @@ import ab.vision.Vision;
 import ar.fi.uba.celdas.ias.IntelligentAutonomousSystem;
 
 import java.awt.*;
-import java.awt.List;
 import java.awt.image.BufferedImage;
 import java.util.*;
 
@@ -132,7 +131,7 @@ public class IntelligentAutonomousAgent implements Runnable {
 
         // if there is a sling, then play, otherwise just skip.
         if (sling != null) {
-            ias.confirmLastTheory(vision);
+            ias.confirmLocalTheory(vision, new GameStateExtractor().getScoreInGame(screenshot));
 
             if (!pigs.isEmpty()) {
 

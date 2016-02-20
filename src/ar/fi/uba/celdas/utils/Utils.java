@@ -39,6 +39,15 @@ public class Utils {
 
 
     public static ABType getRandomAvailableType(Vision vision) {
+        List<ABType> availableTypes = getAvailableTypes(vision);
+
+        int idx = new Random().nextInt(availableTypes.size());
+
+        return availableTypes.get(idx);
+    }
+
+
+    public static List<ABType> getAvailableTypes(Vision vision) {
         Set<ABType> availableTypes = new HashSet<ABType>();
         List<ABObject> everyObject = new ArrayList<ABObject>(vision.findBlocksMBR());
         everyObject.addAll(vision.findPigsMBR());
@@ -46,13 +55,6 @@ public class Utils {
         for (ABObject abObject : everyObject)
             availableTypes.add(abObject.type);
 
-        int idx = new Random().nextInt(availableTypes.size());
-        int i = 0;
-        for(ABType type : availableTypes) {
-            if (i++ == idx)
-                return type;
-        }
-
-        return ABType.Pig;
+        return new ArrayList<ABType>(availableTypes);
     }
 }
