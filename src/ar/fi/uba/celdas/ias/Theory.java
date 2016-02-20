@@ -31,7 +31,7 @@ public class Theory {
     }
 
     public double successRatio() {
-        return (float) (useCount == 0 ? 0 : successCount / useCount);
+        return  (useCount == 0 ? 0 : (float)successCount / useCount);
     }
 
     public double successRatioWithScore() {
