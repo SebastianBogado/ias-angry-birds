@@ -30,6 +30,7 @@ public class IntelligentAutonomousSystem {
 
     public Point getTarget(Vision vision) {
         localTheory = findBestTheory(vision);
+        System.out.println(localTheory);
         return localTheory.action.getTarget(vision);
     }
 
@@ -61,6 +62,8 @@ public class IntelligentAutonomousSystem {
             return;
         }
 
+        System.out.format("[IAS] Local theory did %d score.", localTheoryScore);
+
         theory.postconditions.addAll(describeWorld(vision));
 
         List<Theory> equalTheories = getEqualTheories(theory);
@@ -73,12 +76,12 @@ public class IntelligentAutonomousSystem {
             for (Theory equalTheory : equalTheories) {
                 equalTheory.successCount += 1;
                 equalTheory.useCount += 1;
-                equalTheory.acummulatedScore += localTheoryScore;
+                equalTheory.accumulatedScore += localTheoryScore;
             }
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
-                similarTheory.acummulatedScore += localTheoryScore;
+                similarTheory.accumulatedScore += localTheoryScore;
             }
 
         } else if (!similarTheories.isEmpty()) {
@@ -87,7 +90,7 @@ public class IntelligentAutonomousSystem {
             theories.add(localTheory);
             localTheory.successCount = 1;
             localTheory.useCount = similarTheories.get(0).useCount + 1;
-            localTheory.acummulatedScore += localTheoryScore;
+            localTheory.accumulatedScore += localTheoryScore;
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
@@ -106,7 +109,7 @@ public class IntelligentAutonomousSystem {
             theories.add(localTheory);
             localTheory.successCount = 1;
             localTheory.useCount = 1;
-            localTheory.acummulatedScore += localTheoryScore;
+            localTheory.accumulatedScore += localTheoryScore;
         }
     }
 
@@ -175,7 +178,8 @@ public class IntelligentAutonomousSystem {
 
         return theories.stream()
                 .filter(theory -> theory.satisfiesPreconditions(vision))
-                .sorted(comparing(Theory::successRatio))
+//                .sorted(comparing(Theory::successRatio))
+                .sorted(comparing(Theory::successRatioWithScore))
                 .findFirst()
                 .orElse(localTheory);
     }

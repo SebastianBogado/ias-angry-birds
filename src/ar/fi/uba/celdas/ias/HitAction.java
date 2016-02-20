@@ -72,4 +72,15 @@ public class HitAction implements Action {
         return this.type == other.type &&
                 this.furtherToTheLeft == other.furtherToTheLeft;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        String NEW_LINE = System.getProperty("line.separator");
+
+//        result.append(this.getClass().getName() + " Object {" + NEW_LINE);
+        result.append("Hit further to the left of type " + type.name());
+
+        return result.toString();
+    }
 }

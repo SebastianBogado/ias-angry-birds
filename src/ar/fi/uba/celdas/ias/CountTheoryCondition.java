@@ -109,4 +109,18 @@ public class CountTheoryCondition implements TheoryCondition {
         lessOrEqualThan = _lessOrEqualThan;
         equalThan = _equalThan;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        String NEW_LINE = System.getProperty("line.separator");
+
+//        result.append(this.getClass().getName() + " Object {" + NEW_LINE);
+//        result.append("\tID: " + id + NEW_LINE);
+
+        result.append("There are: " + (count == ANY_COUNT ? " any " : count) + " of type " + type.name());
+//        result.append("}");
+
+        return result.toString();
+    }
 }
