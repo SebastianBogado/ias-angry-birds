@@ -31,7 +31,7 @@ public class Theory {
     }
 
     public double successRatio() {
-        return (float)successCount / useCount;
+        return (float) (useCount == 0 ? 0 : successCount / useCount);
     }
 
     public double successRatioWithScore() {
@@ -104,9 +104,9 @@ public class Theory {
         }
         result.append("\tAction: " + action + NEW_LINE);
 
-        result.append("\tPostconditions: " + id + NEW_LINE);
+        result.append("\tPostconditions: " + NEW_LINE);
         for (TheoryCondition theoryCondition : postconditions) {
-            result.append("\t\t" + theoryCondition);
+            result.append("\t\t" + theoryCondition + NEW_LINE);
         }
 
 
