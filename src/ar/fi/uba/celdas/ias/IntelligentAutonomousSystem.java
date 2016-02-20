@@ -1,6 +1,5 @@
 package ar.fi.uba.celdas.ias;
 
-import ab.vision.ABObject;
 import ab.vision.ABType;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.Utils;
@@ -8,7 +7,6 @@ import ar.fi.uba.celdas.utils.Utils;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -19,31 +17,50 @@ import static java.util.stream.Collectors.toList;
 public class IntelligentAutonomousSystem {
 
     List<Theory> theories;
-    Theory lastTheory;
+    List<Theory> worthlessTheories;
+    Theory localTheory;
+    int lastScore;
 
     public IntelligentAutonomousSystem() {
         theories = new ArrayList<>();
-        lastTheory = null;
+        worthlessTheories = new ArrayList<>();
+        localTheory = null;
+        lastScore = 0;
     }
 
     public Point getTarget(Vision vision) {
-        Theory localTheory = buildLocalTheory(vision);
-        lastTheory = localTheory;
+        localTheory = findBestTheory(vision);
         return localTheory.action.getTarget(vision);
     }
 
-    public void confirmLastTheory(Vision vision, int score) {
-        if (lastTheory == null) {
-            System.out.println("ERROR: there's no theory to confirm. TODO: define what to do here");
+    public void confirmLocalTheory(Vision vision, int score) {
+        if (localTheory == null) {
+            System.out.println("[IAS] No theory to confirm.");
             return;
         }
 
-        confirmTheory(lastTheory, true, vision, score);
+        confirmTheory(localTheory, true, vision, score);
 
-        lastTheory = null;
+        localTheory = null;
     }
 
     private void confirmTheory(Theory theory, Boolean mutate, Vision vision, int score) {
+        int localTheoryScore;
+        if (score < lastScore) {
+            localTheoryScore = score;
+            lastScore = 0;
+        } else {
+            localTheoryScore = score - lastScore;
+            lastScore = score;
+        }
+
+        if (localTheoryScore == 0) {
+            System.out.println("[IAS] Local theory did nothing (0 score). It's not worth it.");
+            worthlessTheories.add(localTheory);
+            localTheory.useCount = 1;
+            return;
+        }
+
         theory.postconditions.addAll(describeWorld(vision));
 
         List<Theory> equalTheories = getEqualTheories(theory);
@@ -51,56 +68,46 @@ public class IntelligentAutonomousSystem {
         List<Theory> mutantTheories;
 
         if (!equalTheories.isEmpty()) {
+            System.out.format("[IAS] Found %d equal theories\n", equalTheories.size());
 
             for (Theory equalTheory : equalTheories) {
                 equalTheory.successCount += 1;
                 equalTheory.useCount += 1;
-                equalTheory.acummulatedScore += score;
+                equalTheory.acummulatedScore += localTheoryScore;
             }
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
-                similarTheory.acummulatedScore += score;
+                similarTheory.acummulatedScore += localTheoryScore;
             }
 
         } else if (!similarTheories.isEmpty()) {
-            theories.add(lastTheory);
-            lastTheory.successCount = 1;
-            lastTheory.useCount = similarTheories.get(0).useCount + 1;
-            lastTheory.acummulatedScore += score;
+            System.out.format("[IAS] Found %d similar theories\n", similarTheories.size());
+
+            theories.add(localTheory);
+            localTheory.successCount = 1;
+            localTheory.useCount = similarTheories.get(0).useCount + 1;
+            localTheory.acummulatedScore += localTheoryScore;
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
             }
 
             if (mutate) {
-                mutantTheories = generateMutantTheories(lastTheory);
+                mutantTheories = generateMutantTheories(localTheory);
 
                 for (Theory mutantTheory : mutantTheories) {
-                    confirmTheory(mutantTheory, false, vision, score);
+                    confirmTheory(mutantTheory, false, vision, localTheoryScore);
                 }
             }
 
         } else {
-            System.out.println("ERROR: there are no similar theories. TODO: define what to do here");
+            System.out.println("[IAS] Found nothing similar to this theory. Adding it to the list");
+            theories.add(localTheory);
+            localTheory.successCount = 1;
+            localTheory.useCount = 1;
+            localTheory.acummulatedScore += localTheoryScore;
         }
-    }
-
-
-    private Theory buildLocalTheory(Vision vision) {
-        Theory localTheory;
-
-        ABType typeToHit = Utils.getRandomAvailableType(vision);
-        localTheory = new Theory();
-
-        Action action = new HitAction()
-                .furtherToTheLeft()
-                .ofType(typeToHit);
-
-        localTheory.preconditions.addAll(describeWorld(vision));
-        localTheory.action = action;
-
-        return localTheory;
     }
 
     private List<Theory> getEqualTheories(Theory localTheory) {
@@ -156,19 +163,43 @@ public class IntelligentAutonomousSystem {
         return newTheory;
     }
 
+    /**
+     * This method finds the best theory or builds one if there are not matches.
+     * Best theory is the one with that satisfies all preconditions and has the higher
+     * successRatio, i.e., successCount / useCount
+     * @param vision
+     * @return
+     */
     private Theory findBestTheory(Vision vision) {
+        Theory localTheory = buildLocalTheory(vision);
 
-        Optional<Theory> theoryOptional = theories.stream()
+        return theories.stream()
                 .filter(theory -> theory.satisfiesPreconditions(vision))
                 .sorted(comparing(Theory::successRatio))
-                .findFirst();
+                .findFirst()
+                .orElse(localTheory);
+    }
 
-        return theoryOptional.isPresent() ? theoryOptional.get() : null;
+
+    private Theory buildLocalTheory(Vision vision) {
+        Theory localTheory;
+
+        ABType typeToHit = Utils.getRandomAvailableType(vision);
+        localTheory = new Theory();
+
+        Action action = new HitAction()
+                .furtherToTheLeft()
+                .ofType(typeToHit);
+
+        localTheory.preconditions.addAll(describeWorld(vision));
+        localTheory.action = action;
+
+        return localTheory;
     }
 
 
     private List<TheoryCondition> describeWorld(Vision vision) {
-        List<TheoryCondition> conditions = new ArrayList<TheoryCondition>();
+        List<TheoryCondition> conditions = new ArrayList<>();
 
         for (ABType type : Utils.getAvailableTypes(vision)) {
             TheoryCondition condition = new CountTheoryCondition()

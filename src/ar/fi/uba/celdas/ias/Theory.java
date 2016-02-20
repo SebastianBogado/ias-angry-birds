@@ -61,7 +61,7 @@ public class Theory {
         Stream<TheoryCondition> otherPreconditionsStream = other.preconditions.stream();
         boolean preconditionsAreEqual = this.preconditions.stream()
                 .allMatch(myPrecondition ->
-                                otherPreconditionsStream.anyMatch(precondition ->
+                                other.preconditions.stream().anyMatch(precondition ->
                                         myPrecondition.equals(precondition) || myPrecondition.isMoreSpecific(precondition))
                 );
 
@@ -75,7 +75,7 @@ public class Theory {
         Stream<TheoryCondition> otherPostconditionsStream = other.postconditions.stream();
         boolean postconditionsAreEqual = this.postconditions.stream()
                 .allMatch(myPostcondition ->
-                                otherPostconditionsStream.anyMatch(postcondition ->
+                                other.postconditions.stream().anyMatch(postcondition ->
                                         myPostcondition.equals(postcondition) || myPostcondition.isMoreSpecific(postcondition))
                 );
 
