@@ -7,6 +7,7 @@ import ar.fi.uba.celdas.utils.Utils;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -167,21 +168,24 @@ public class IntelligentAutonomousSystem {
     }
 
     /**
-     * This method finds the best theory or builds one if there are not matches.
+     * This method finds the best theory and returns a clone or builds one if there are no matches.
      * Best theory is the one with that satisfies all preconditions and has the higher
      * successRatio, i.e., successCount / useCount
      * @param vision
      * @return
      */
     private Theory findBestTheory(Vision vision) {
-        Theory localTheory = buildLocalTheory(vision);
-
-        return theories.stream()
-                .filter(theory -> theory.satisfiesPreconditions(vision))
-//                .sorted(comparing(Theory::successRatio))
-                .sorted(comparing(Theory::successRatioWithScore))
-                .findFirst()
-                .orElse(localTheory);
+        try {
+            return theories.stream()
+                    .filter(theory -> theory.satisfiesPreconditions(vision))
+//                    .sorted(comparing(Theory::successRatio))
+                    .sorted(comparing(Theory::successRatioWithScore))
+                    .findFirst()
+                    .get()
+                    .clonePreconditionsAndAction();
+        } catch (NoSuchElementException exception) {
+            return buildLocalTheory(vision);
+        }
     }
 
 

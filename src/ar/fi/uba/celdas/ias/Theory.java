@@ -20,6 +20,8 @@ public class Theory {
     public int id;
 
     static private int idGenerator = 0;
+    private boolean cloned;
+    private Theory clonedFrom;
 
     public Theory() {
         preconditions = new ArrayList<TheoryCondition>();
@@ -28,6 +30,8 @@ public class Theory {
         successCount = 0;
         accumulatedScore = 0;
         id = idGenerator++;
+        cloned = false;
+        clonedFrom = null;
     }
 
     public double successRatio() {
@@ -92,6 +96,8 @@ public class Theory {
 
     @Override
     public String toString() {
+        if (cloned) return clonedFrom.toString();
+
         StringBuilder result = new StringBuilder();
         String NEW_LINE = System.getProperty("line.separator");
 
@@ -118,5 +124,14 @@ public class Theory {
         result.append("}");
 
         return result.toString();
+    }
+
+    public Theory clonePreconditionsAndAction() {
+        Theory theory = new Theory();
+        theory.preconditions.addAll(this.preconditions);
+        theory.action = this.action;
+        theory.cloned = true;
+        theory.clonedFrom = this;
+        return theory;
     }
 }
