@@ -36,8 +36,6 @@ public class IntelligentAutonomousSystem {
         iasMarshaller = new IASMarshaller(filename);
         IntelligentAutonomousSystem persistedIAS = iasMarshaller.getIAS();
 
-        if (persistedIAS == null) System.out.println("LOL");
-
         theories.addAll(persistedIAS.theories);
         worthlessTheories.addAll(persistedIAS.worthlessTheories);
     }
