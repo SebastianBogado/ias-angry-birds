@@ -28,6 +28,8 @@ public class IntelligentAutonomousAgent implements Runnable {
     private Point prevTarget;
     private IntelligentAutonomousSystem ias;
 
+    public static String filename = "theories.json";
+
     // a standalone implementation of the Intelligent Autonomous Agent
     public IntelligentAutonomousAgent() {
 
@@ -36,7 +38,7 @@ public class IntelligentAutonomousAgent implements Runnable {
         prevTarget = null;
         firstShot = true;
         randomGenerator = new Random();
-        ias = new IntelligentAutonomousSystem();
+        ias = new IntelligentAutonomousSystem(filename);
         // --- go to the Poached Eggs episode level selection page ---
         ActionRobot.GoFromMainMenuToLevelSelection();
 

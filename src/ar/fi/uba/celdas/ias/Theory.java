@@ -1,6 +1,7 @@
 package ar.fi.uba.celdas.ias;
 
 import ab.vision.Vision;
+import com.google.gson.annotations.Expose;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,15 +18,15 @@ public class Theory {
     public int useCount;
     public int successCount;
     public int accumulatedScore;
-    public int id;
+    public transient int id;
 
     static private int idGenerator = 0;
     private boolean cloned;
     private Theory clonedFrom;
 
     public Theory() {
-        preconditions = new ArrayList<TheoryCondition>();
-        postconditions = new ArrayList<TheoryCondition>();
+        preconditions = new ArrayList<>();
+        postconditions = new ArrayList<>();
         useCount = 0;
         successCount = 0;
         accumulatedScore = 0;

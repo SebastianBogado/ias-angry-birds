@@ -2,6 +2,7 @@ package ar.fi.uba.celdas.ias;
 
 import ab.vision.ABType;
 import ab.vision.Vision;
+import ar.fi.uba.celdas.utils.IASMarshaller;
 import ar.fi.uba.celdas.utils.Utils;
 
 import java.awt.*;
@@ -17,16 +18,28 @@ import static java.util.stream.Collectors.toList;
  */
 public class IntelligentAutonomousSystem {
 
-    List<Theory> theories;
-    List<Theory> worthlessTheories;
-    Theory localTheory;
-    int lastScore;
+    public List<Theory> theories;
+    public List<Theory> worthlessTheories;
+    private Theory localTheory;
+    private int lastScore;
+    private IASMarshaller iasMarshaller;
 
     public IntelligentAutonomousSystem() {
         theories = new ArrayList<>();
         worthlessTheories = new ArrayList<>();
         localTheory = null;
         lastScore = 0;
+    }
+
+    public IntelligentAutonomousSystem(String filename) {
+        this();
+        iasMarshaller = new IASMarshaller(filename);
+        IntelligentAutonomousSystem persistedIAS = iasMarshaller.getIAS();
+
+        if (persistedIAS == null) System.out.println("LOL");
+
+        theories.addAll(persistedIAS.theories);
+        worthlessTheories.addAll(persistedIAS.worthlessTheories);
     }
 
     public Point getTarget(Vision vision) {
@@ -43,27 +56,29 @@ public class IntelligentAutonomousSystem {
 
         confirmTheory(localTheory, true, vision, score);
 
+        iasMarshaller.save(this);
+
         localTheory = null;
     }
 
     private void confirmTheory(Theory theory, Boolean mutate, Vision vision, int score) {
-        int localTheoryScore;
+        int theoryScore;
         if (score < lastScore) {
-            localTheoryScore = score;
+            theoryScore = score;
             lastScore = 0;
         } else {
-            localTheoryScore = score - lastScore;
+            theoryScore = score - lastScore;
             lastScore = score;
         }
 
-        if (localTheoryScore == 0) {
+        if (theoryScore == 0) {
             System.out.println("[IAS] Local theory did nothing (0 score). It's not worth it.");
-            worthlessTheories.add(localTheory);
-            localTheory.useCount = 1;
+            worthlessTheories.add(theory);
+            theory.useCount = 1;
             return;
         }
 
-        System.out.format("[IAS] Local theory did %d score.", localTheoryScore);
+        System.out.format("[IAS] Local theory did %d score.", theoryScore);
 
         theory.postconditions.addAll(describeWorld(vision));
 
@@ -77,40 +92,40 @@ public class IntelligentAutonomousSystem {
             for (Theory equalTheory : equalTheories) {
                 equalTheory.successCount += 1;
                 equalTheory.useCount += 1;
-                equalTheory.accumulatedScore += localTheoryScore;
+                equalTheory.accumulatedScore += theoryScore;
             }
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
-                similarTheory.accumulatedScore += localTheoryScore;
+                similarTheory.accumulatedScore += theoryScore;
             }
 
         } else if (!similarTheories.isEmpty()) {
             System.out.format("[IAS] Found %d similar theories\n", similarTheories.size());
 
-            theories.add(localTheory);
-            localTheory.successCount = 1;
-            localTheory.useCount = similarTheories.get(0).useCount + 1;
-            localTheory.accumulatedScore += localTheoryScore;
+            theories.add(theory);
+            theory.successCount = 1;
+            theory.useCount = similarTheories.get(0).useCount + 1;
+            theory.accumulatedScore += theoryScore;
 
             for (Theory similarTheory : similarTheories) {
                 similarTheory.useCount += 1;
             }
 
             if (mutate) {
-                mutantTheories = generateMutantTheories(localTheory);
+                mutantTheories = generateMutantTheories(theory);
 
                 for (Theory mutantTheory : mutantTheories) {
-                    confirmTheory(mutantTheory, false, vision, localTheoryScore);
+                    confirmTheory(mutantTheory, false, vision, theoryScore);
                 }
             }
 
         } else {
             System.out.println("[IAS] Found nothing similar to this theory. Adding it to the list");
-            theories.add(localTheory);
-            localTheory.successCount = 1;
-            localTheory.useCount = 1;
-            localTheory.accumulatedScore += localTheoryScore;
+            theories.add(theory);
+            theory.successCount = 1;
+            theory.useCount = 1;
+            theory.accumulatedScore += theoryScore;
         }
     }
 
