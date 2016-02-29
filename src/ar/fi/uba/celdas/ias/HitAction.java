@@ -1,17 +1,14 @@
 package ar.fi.uba.celdas.ias;
 
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
+
 import ab.vision.ABObject;
 import ab.vision.ABType;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.Utils;
 
-import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Created by seba on 2/3/16.
- */
 public class HitAction implements Action {
 
     public ABType type;

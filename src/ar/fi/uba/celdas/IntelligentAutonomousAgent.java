@@ -1,5 +1,14 @@
 package ar.fi.uba.celdas;
 
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 import ab.demo.other.ActionRobot;
 import ab.demo.other.Shot;
 import ab.planner.TrajectoryPlanner;
@@ -9,39 +18,25 @@ import ab.vision.GameStateExtractor;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.ias.IntelligentAutonomousSystem;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.util.*;
-
-/**
- * Created by seba on 2/2/16.
- */
 public class IntelligentAutonomousAgent implements Runnable {
 
-    private ActionRobot aRobot;
-    private Random randomGenerator;
-    public int currentLevel = 1;
-    public static int time_limit = 12;
-    private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
-    TrajectoryPlanner tp;
-    private boolean firstShot;
-    private Point prevTarget;
+    private final ActionRobot aRobot = new ActionRobot();
+    private final Random randomGenerator = new Random();
+    private Map<Integer,Integer> scoreByLevel = new LinkedHashMap<Integer,Integer>();
+    private int currentLevel = 1;
+    private TrajectoryPlanner tp;
     private IntelligentAutonomousSystem ias;
 
-    public static String filename = "theories.json";
+    public static String THEORIES_FILE = "theories.json";
 
     // a standalone implementation of the Intelligent Autonomous Agent
     public IntelligentAutonomousAgent() {
 
-        aRobot = new ActionRobot();
         tp = new TrajectoryPlanner();
-        prevTarget = null;
-        firstShot = true;
-        randomGenerator = new Random();
-        ias = new IntelligentAutonomousSystem(filename);
+        ias = new IntelligentAutonomousSystem(THEORIES_FILE);
+
         // --- go to the Poached Eggs episode level selection page ---
         ActionRobot.GoFromMainMenuToLevelSelection();
-
     }
 
     @Override
@@ -50,64 +45,73 @@ public class IntelligentAutonomousAgent implements Runnable {
 
         aRobot.loadLevel(currentLevel);
         while (true) {
-            GameStateExtractor.GameState state = solve();
-            if (state == GameStateExtractor.GameState.WON) {
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                int score = StateUtil.getScore(ActionRobot.proxy);
-                if(!scores.containsKey(currentLevel))
-                    scores.put(currentLevel, score);
-                else
-                {
-                    if(scores.get(currentLevel) < score)
-                        scores.put(currentLevel, score);
-                }
-                int totalScore = 0;
-                for(Integer key: scores.keySet()){
-
-                    totalScore += scores.get(key);
-                    System.out.println(" Level " + key
-                            + " Score: " + scores.get(key) + " ");
-                }
-                System.out.println("Total Score: " + totalScore);
-//                aRobot.loadLevel(++currentLevel);
-                aRobot.loadLevel(currentLevel);
-                // make a new trajectory planner whenever a new level is entered
-                tp = new TrajectoryPlanner();
-
-                // first shot on this level, try high shot first
-                firstShot = true;
-            } else if (state == GameStateExtractor.GameState.LOST) {
-                System.out.println("Restart");
-                aRobot.restartLevel();
-            } else if (state == GameStateExtractor.GameState.LEVEL_SELECTION) {
-                System.out
-                        .println("Unexpected level selection page, go to the last current level : "
-                                + currentLevel);
-                aRobot.loadLevel(currentLevel);
-            } else if (state == GameStateExtractor.GameState.MAIN_MENU) {
-                System.out
-                        .println("Unexpected main menu page, go to the last current level : "
-                                + currentLevel);
-                ActionRobot.GoFromMainMenuToLevelSelection();
-                aRobot.loadLevel(currentLevel);
-            } else if (state == GameStateExtractor.GameState.EPISODE_MENU) {
-                System.out
-                        .println("Unexpected episode menu page, go to the last current level : "
-                                + currentLevel);
-                ActionRobot.GoFromMainMenuToLevelSelection();
-                aRobot.loadLevel(currentLevel);
+            switch (solve()){
+                case WON:
+                    int totalScore = processWin();
+                    //loadLevel("Total Score: " + totalScore, ++currentLevel);
+                    // Keep iterating over same level to improve learning
+                    loadLevel("Total Score: " + totalScore, currentLevel);
+                    break;
+                case LOST:
+                    restartLevel();
+                    break;
+                case MAIN_MENU:
+                    reloadFromMenu("Unexpected main menu page, go to the last current level : " + currentLevel, currentLevel);
+                    break;
+                case EPISODE_MENU:
+                    reloadFromMenu("Unexpected episode menu page, go to the last current level : "+ currentLevel, currentLevel);
+                    break;
+                case LEVEL_SELECTION:
+                    loadLevel("Unexpected level selection page, go to the last current level : " + currentLevel, currentLevel);
+                    break;
             }
-
         }
-
     }
 
-    public GameStateExtractor.GameState solve()
-    {
+    private void reloadFromMenu(String loadMessage, int currentLevel) {
+        System.out.println(loadMessage);
+        ActionRobot.GoFromMainMenuToLevelSelection();
+        aRobot.loadLevel(currentLevel);
+    }
+
+    private void loadLevel(String loadMessage, int level) {
+        System.out.println(loadMessage);
+        aRobot.loadLevel(level);
+    }
+
+    private void restartLevel() {
+        System.out.println("Restart");
+        aRobot.restartLevel();
+    }
+
+    private int processWin() {
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        int score = StateUtil.getScore(ActionRobot.proxy);
+        if(!scoreByLevel.containsKey(currentLevel)) {
+            scoreByLevel.put(currentLevel, score);
+        } else {
+            if(scoreByLevel.get(currentLevel) < score){
+                scoreByLevel.put(currentLevel, score);
+            }
+        }
+
+        int totalScore = 0;
+        for(Integer key: scoreByLevel.keySet()){
+            totalScore += scoreByLevel.get(key);
+            System.out.println(" Level " + key + " Score: " + scoreByLevel.get(key) + " ");
+        }
+
+        // make a new trajectory planner whenever a new level is entered
+        tp = new TrajectoryPlanner();
+
+        return totalScore;
+    }
+
+    public GameStateExtractor.GameState solve() {
         // capture Image
         BufferedImage screenshot = ActionRobot.doScreenShot();
 
@@ -119,15 +123,15 @@ public class IntelligentAutonomousAgent implements Runnable {
 
         // confirm the slingshot
         while (sling == null && aRobot.getState() == GameStateExtractor.GameState.PLAYING) {
-            System.out
-                    .println("No slingshot detected. Please remove pop up or zoom out");
+            System.out.println("No slingshot detected. Please remove pop up or zoom out");
             ActionRobot.fullyZoomOut();
             screenshot = ActionRobot.doScreenShot();
             vision = new Vision(screenshot);
             sling = vision.findSlingshotMBR();
         }
+
         // get all the pigs
-        java.util.List<ABObject> pigs = vision.findPigsMBR();
+        List<ABObject> pigs = vision.findPigsMBR();
 
         GameStateExtractor.GameState state = aRobot.getState();
 
@@ -136,19 +140,15 @@ public class IntelligentAutonomousAgent implements Runnable {
             ias.confirmLocalTheory(vision, new GameStateExtractor().getScoreInGame(screenshot));
 
             if (!pigs.isEmpty()) {
-
-                Point releasePoint = null;
-                Shot shot = new Shot();
+                Point releasePoint;
+                Shot shot;
                 int dx,dy;
                 {
                     // let the IAS decide where to shoot
                     Point target = ias.getTarget(vision);
 
-                    prevTarget = new Point(target.x, target.y);
-
                     // estimate the trajectory
                     ArrayList<Point> pts = tp.estimateLaunchPoint(sling, target);
-
 
                     if (pts.isEmpty()) {
                         System.out.println("No release point found for the target");
@@ -162,18 +162,13 @@ public class IntelligentAutonomousAgent implements Runnable {
                     // Get the reference point
                     Point refPoint = tp.getReferencePoint(sling);
 
-
                     //Calculate the tapping time according the bird type
                     if (releasePoint != null) {
-                        double releaseAngle = tp.getReleaseAngle(sling,
-                                releasePoint);
+                        double releaseAngle = tp.getReleaseAngle(sling, releasePoint);
                         System.out.println("Release Point: " + releasePoint);
-                        System.out.println("Release Angle: "
-                                + Math.toDegrees(releaseAngle));
-                        int tapInterval = 0;
-                        switch (aRobot.getBirdTypeOnSling())
-                        {
-
+                        System.out.println("Release Angle: " + Math.toDegrees(releaseAngle));
+                        int tapInterval;
+                        switch (aRobot.getBirdTypeOnSling()){
                             case RedBird:
                                 tapInterval = 0; break;               // start of trajectory
                             case YellowBird:
@@ -192,9 +187,8 @@ public class IntelligentAutonomousAgent implements Runnable {
                         dx = (int)releasePoint.getX() - refPoint.x;
                         dy = (int)releasePoint.getY() - refPoint.y;
                         shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
-                    }
-                    else
-                    {
+
+                    } else {
                         System.err.println("No Release Point Found");
                         return state;
                     }
@@ -206,30 +200,25 @@ public class IntelligentAutonomousAgent implements Runnable {
                     screenshot = ActionRobot.doScreenShot();
                     vision = new Vision(screenshot);
                     Rectangle _sling = vision.findSlingshotMBR();
-                    if(_sling != null)
-                    {
+                    if(_sling != null) {
                         double scale_diff = Math.pow((sling.width - _sling.width),2) +  Math.pow((sling.height - _sling.height),2);
-                        if(scale_diff < 25)
-                        {
-                            if(dx < 0)
-                            {
+                        if(scale_diff < 25) {
+                            if(dx < 0){
                                 aRobot.cshoot(shot);
                                 state = aRobot.getState();
-                                if ( state == GameStateExtractor.GameState.PLAYING )
-                                {
+                                if ( state == GameStateExtractor.GameState.PLAYING ){
                                     screenshot = ActionRobot.doScreenShot();
                                     vision = new Vision(screenshot);
                                     java.util.List<Point> traj = vision.findTrajPoints();
                                     tp.adjustTrajectory(traj, sling, releasePoint);
-                                    firstShot = false;
                                 }
                             }
-                        }
-                        else
+                        } else {
                             System.out.println("Scale is changed, can not execute the shot, will re-segement the image");
-                    }
-                    else
+                        }
+                    } else {
                         System.out.println("no sling detected, can not execute the shot, will re-segement the image");
+                    }
                 }
 
             }
@@ -241,8 +230,9 @@ public class IntelligentAutonomousAgent implements Runnable {
     public static void main(String args[]) {
 
         IntelligentAutonomousAgent iaa = new IntelligentAutonomousAgent();
-        if (args.length > 0)
+        if (args.length > 0){
             iaa.currentLevel = Integer.parseInt(args[0]);
+        }
         iaa.run();
 
     }

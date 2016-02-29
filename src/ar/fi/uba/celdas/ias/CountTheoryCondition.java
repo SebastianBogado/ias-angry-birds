@@ -4,9 +4,6 @@ import ab.vision.ABType;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.Utils;
 
-/**
- * Created by seba on 2/3/16.
- */
 public class CountTheoryCondition implements TheoryCondition {
 
     public int count;
@@ -88,10 +85,9 @@ public class CountTheoryCondition implements TheoryCondition {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
+        if (!(obj instanceof CountTheoryCondition))
             return false;
-        if (getClass() != obj.getClass())
-            return false;
+
         CountTheoryCondition other = (CountTheoryCondition) obj;
 
         return this.count == other.count &&
@@ -112,15 +108,6 @@ public class CountTheoryCondition implements TheoryCondition {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
-        String NEW_LINE = System.getProperty("line.separator");
-
-//        result.append(this.getClass().getName() + " Object {" + NEW_LINE);
-//        result.append("\tID: " + id + NEW_LINE);
-
-        result.append("There are: " + (count == ANY_COUNT ? " any " : count) + " of type " + type.name());
-//        result.append("}");
-
-        return result.toString();
+        return "There are: " + (count == ANY_COUNT ? " any " : count) + " of type " + type.name();
     }
 }

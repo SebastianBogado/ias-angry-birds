@@ -6,9 +6,6 @@ import ab.vision.Vision;
 
 import java.util.*;
 
-/**
- * Created by seba on 2/6/16.
- */
 public class Utils {
     // Using ABType.Unknown as 'any' because it's not used, at least during the first levels
     public static ABType ANY_TYPE = ABType.Unknown;

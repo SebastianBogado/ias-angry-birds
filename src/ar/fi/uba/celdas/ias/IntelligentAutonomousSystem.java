@@ -1,21 +1,18 @@
 package ar.fi.uba.celdas.ias;
 
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
+
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+
 import ab.vision.ABType;
 import ab.vision.Vision;
 import ar.fi.uba.celdas.utils.IASMarshaller;
 import ar.fi.uba.celdas.utils.Utils;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-
-import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
-
-/**
- * Created by seba on 2/2/16.
- */
 public class IntelligentAutonomousSystem {
 
     public List<Theory> theories;

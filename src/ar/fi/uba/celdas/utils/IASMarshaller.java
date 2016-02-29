@@ -1,8 +1,5 @@
 package ar.fi.uba.celdas.utils;
 
-import ar.fi.uba.celdas.ias.Action;
-import ar.fi.uba.celdas.ias.IntelligentAutonomousSystem;
-import ar.fi.uba.celdas.ias.TheoryCondition;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -14,9 +11,10 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-/**
- * Created by seba on 2/21/16.
- */
+import ar.fi.uba.celdas.ias.Action;
+import ar.fi.uba.celdas.ias.IntelligentAutonomousSystem;
+import ar.fi.uba.celdas.ias.TheoryCondition;
+
 public class IASMarshaller {
     String filename;
     Gson gson;
@@ -47,7 +45,6 @@ public class IASMarshaller {
             return gson.fromJson(json, IntelligentAutonomousSystem.class);
         } catch (IOException e) {
             e.printStackTrace();
-
             return new IntelligentAutonomousSystem();
         }
     }
@@ -56,7 +53,7 @@ public class IASMarshaller {
         try( PrintWriter out = new PrintWriter( filename ) ){
             out.print(gson.toJson(intelligentAutonomousSystem));
         } catch (FileNotFoundException e) {
-            System.out.println("ERROR while saving to " + filename + ", file not found.");
+            System.out.println("ERROR while saving to " + filename + ", file not found. " + e.getMessage());
         }
     }
 }
