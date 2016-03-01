@@ -22,10 +22,11 @@ public class IntelligentAutonomousAgent implements Runnable {
 
     private final ActionRobot aRobot = new ActionRobot();
     private final Random randomGenerator = new Random();
-    private Map<Integer,Integer> scoreByLevel = new LinkedHashMap<Integer,Integer>();
+    private Map<Integer,Integer> scoreByLevel = new LinkedHashMap<>();
     private int currentLevel = 1;
     private TrajectoryPlanner tp;
     private IntelligentAutonomousSystem ias;
+    private boolean firstShotInLevel = true;
 
     public static String THEORIES_FILE = "theories.json";
 
@@ -71,16 +72,19 @@ public class IntelligentAutonomousAgent implements Runnable {
     private void reloadFromMenu(String loadMessage, int currentLevel) {
         System.out.println(loadMessage);
         ActionRobot.GoFromMainMenuToLevelSelection();
+        firstShotInLevel = true;
         aRobot.loadLevel(currentLevel);
     }
 
     private void loadLevel(String loadMessage, int level) {
         System.out.println(loadMessage);
+        firstShotInLevel = true;
         aRobot.loadLevel(level);
     }
 
     private void restartLevel() {
         System.out.println("Restart");
+        firstShotInLevel = true;
         aRobot.restartLevel();
     }
 
@@ -112,6 +116,18 @@ public class IntelligentAutonomousAgent implements Runnable {
     }
 
     public GameStateExtractor.GameState solve() {
+
+        // if first shot in level, click in the center to hide menu, just in case
+        if (firstShotInLevel) {
+            aRobot.click();
+            try {
+                // wait until the menu hides
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         // capture Image
         BufferedImage screenshot = ActionRobot.doScreenShot();
 
@@ -205,6 +221,7 @@ public class IntelligentAutonomousAgent implements Runnable {
                         if(scale_diff < 25) {
                             if(dx < 0){
                                 aRobot.cshoot(shot);
+                                firstShotInLevel = false;
                                 state = aRobot.getState();
                                 if ( state == GameStateExtractor.GameState.PLAYING ){
                                     screenshot = ActionRobot.doScreenShot();
