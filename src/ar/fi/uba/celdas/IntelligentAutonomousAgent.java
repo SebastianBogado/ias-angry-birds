@@ -28,6 +28,9 @@ public class IntelligentAutonomousAgent implements Runnable {
     private IntelligentAutonomousSystem ias;
     private boolean firstShotInLevel = true;
 
+    private int timesWonSameLevel = 0;
+    private static int MAX_LEVEL_ITERATION = 50;
+
     public static String THEORIES_FILE = "theories.json";
 
     // a standalone implementation of the Intelligent Autonomous Agent
@@ -49,8 +52,13 @@ public class IntelligentAutonomousAgent implements Runnable {
             switch (solve()){
                 case WON:
                     int totalScore = processWin();
-                    //loadLevel("Total Score: " + totalScore, ++currentLevel);
-                    // Keep iterating over same level to improve learning
+
+                    if (++timesWonSameLevel == MAX_LEVEL_ITERATION) {
+                        currentLevel++;
+                        timesWonSameLevel = 0;
+                        ias.mutateBestTheories(currentLevel);
+                    }
+
                     loadLevel("Total Score: " + totalScore, currentLevel);
                     break;
                 case LOST:

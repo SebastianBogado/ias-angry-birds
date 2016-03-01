@@ -248,4 +248,8 @@ public class IntelligentAutonomousSystem {
 
         return conditions;
     }
+
+    public void mutateBestTheories(int currentLevel) {
+
+    }
 }
