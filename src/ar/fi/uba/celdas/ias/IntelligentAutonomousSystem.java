@@ -49,6 +49,8 @@ public class IntelligentAutonomousSystem {
             return;
         }
 
+
+        localTheory.postconditions.addAll(describeWorld(vision));
         confirmTheory(localTheory, true, vision, score);
 
         iasMarshaller.save(this);
@@ -73,9 +75,7 @@ public class IntelligentAutonomousSystem {
             return;
         }
 
-        System.out.format("[IAS] Local theory did %d score.", theoryScore);
-
-        theory.postconditions.addAll(describeWorld(vision));
+        System.out.format("[IAS] Local theory did %d score.\n", theoryScore);
 
         List<Theory> equalTheories = getEqualTheories(theory);
         List<Theory> similarTheories = getSimilarTheories(theory);
@@ -111,6 +111,8 @@ public class IntelligentAutonomousSystem {
                 mutantTheories = generateMutantTheories(theory);
 
                 for (Theory mutantTheory : mutantTheories) {
+                    System.out.println("Mutation: ");
+                    System.out.println(mutantTheory);
                     confirmTheory(mutantTheory, false, vision, theoryScore);
                 }
             }
@@ -138,6 +140,23 @@ public class IntelligentAutonomousSystem {
 
     private List<Theory> generateMutantTheories(Theory localTheory) {
         List<Theory> mutantTheories = new ArrayList<>();
+        // Hackity hack
+        List<TheoryCondition> worldState = new ArrayList<>();
+
+        if (localTheory.isCloned()) worldState.addAll(localTheory.getClonedFrom().postconditions);
+
+        // Retraction heuristic
+        Theory retractionTheory = new Theory();
+        retractionTheory.preconditions.addAll(localTheory.preconditions);
+        retractionTheory.action = localTheory.action;
+        retractionTheory.postconditions.addAll( localTheory.postconditions.stream()
+                .filter(postcondition ->
+                                worldState.stream().anyMatch(worldStatePostconditon ->
+                                        postcondition.equals(worldStatePostconditon) || postcondition.isMoreSpecific(worldStatePostconditon))
+                )
+                .collect(toList())
+        );
+
         return mutantTheories;
     }
 

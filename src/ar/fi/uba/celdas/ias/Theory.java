@@ -30,6 +30,12 @@ public class Theory {
         cloned = false;
         clonedFrom = null;
     }
+    public Theory getClonedFrom() {
+        return clonedFrom;
+    }
+    public boolean isCloned() {
+        return cloned;
+    }
 
     public double successRatio() {
         return  (useCount == 0 ? 0 : (float)successCount / useCount);
@@ -67,7 +73,6 @@ public class Theory {
             return false;
         Theory other = (Theory) obj;
 
-        Stream<TheoryCondition> otherPreconditionsStream = other.preconditions.stream();
         boolean preconditionsAreEqual = this.preconditions.stream()
                 .allMatch(myPrecondition ->
                                 other.preconditions.stream().anyMatch(precondition ->
@@ -81,7 +86,6 @@ public class Theory {
     public boolean similar(Theory other) {
         boolean actionsAreEqual = this.action.equals(other.action);
 
-        Stream<TheoryCondition> otherPostconditionsStream = other.postconditions.stream();
         boolean postconditionsAreEqual = this.postconditions.stream()
                 .allMatch(myPostcondition ->
                                 other.postconditions.stream().anyMatch(postcondition ->
