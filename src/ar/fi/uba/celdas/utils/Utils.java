@@ -45,13 +45,13 @@ public class Utils {
 
 
     public static List<ABType> getAvailableTypes(Vision vision) {
-        Set<ABType> availableTypes = new HashSet<ABType>();
-        List<ABObject> everyObject = new ArrayList<ABObject>(vision.findBlocksMBR());
+        Set<ABType> availableTypes = new HashSet<>();
+        List<ABObject> everyObject = new ArrayList<>(vision.findBlocksMBR());
         everyObject.addAll(vision.findPigsMBR());
 
         for (ABObject abObject : everyObject)
             availableTypes.add(abObject.type);
 
-        return new ArrayList<ABType>(availableTypes);
+        return new ArrayList<>(availableTypes);
     }
 }

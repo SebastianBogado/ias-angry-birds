@@ -22,9 +22,9 @@ public class HitAction implements Action {
 
     @Override
     public Point getTarget(Vision vision) {
-        List<ABObject> abObjectsOfType = new ArrayList<ABObject>();
+        List<ABObject> abObjectsOfType = new ArrayList<>();
 
-        List<ABObject> everyObject = new ArrayList<ABObject>(vision.findBlocksMBR());
+        List<ABObject> everyObject = new ArrayList<>(vision.findBlocksMBR());
         everyObject.addAll(vision.findPigsMBR());
 
         for (ABObject abObject : everyObject) {

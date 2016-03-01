@@ -1,15 +1,11 @@
 package ar.fi.uba.celdas.ias;
 
 import ab.vision.Vision;
-import com.google.gson.annotations.Expose;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * Created by seba on 2/2/16.
- */
 public class Theory {
 
     public List<TheoryCondition> preconditions;
