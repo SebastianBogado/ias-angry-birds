@@ -19,6 +19,7 @@ public class Theory {
     static private int idGenerator = 0;
     private boolean cloned;
     private Theory clonedFrom;
+    public int level;
 
     public Theory() {
         preconditions = new ArrayList<>();
@@ -29,6 +30,7 @@ public class Theory {
         id = idGenerator++;
         cloned = false;
         clonedFrom = null;
+        level = -1;
     }
     public Theory getClonedFrom() {
         return clonedFrom;
@@ -104,6 +106,7 @@ public class Theory {
 
         result.append(this.getClass().getName() + " Object {" + NEW_LINE);
         result.append("\tID: " + id + NEW_LINE);
+        result.append("\tCreated at level: " + (level == -1 ? "none, mutated theory between levels" : level)+ NEW_LINE);
 
         result.append("\tPreconditions: " + NEW_LINE);
         for (TheoryCondition theoryCondition : preconditions) {

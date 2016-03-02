@@ -15,6 +15,7 @@ import ar.fi.uba.celdas.utils.Utils;
 
 public class IntelligentAutonomousSystem {
 
+    public List<Theory> generalTheories;
     public List<Theory> theories;
     public List<Theory> worthlessTheories;
     private Theory localTheory;
@@ -22,6 +23,7 @@ public class IntelligentAutonomousSystem {
     private IASMarshaller iasMarshaller;
 
     public IntelligentAutonomousSystem() {
+        generalTheories = new ArrayList<>();
         theories = new ArrayList<>();
         worthlessTheories = new ArrayList<>();
         localTheory = null;
@@ -37,8 +39,9 @@ public class IntelligentAutonomousSystem {
         worthlessTheories.addAll(persistedIAS.worthlessTheories);
     }
 
-    public Point getTarget(Vision vision) {
+    public Point getTarget(Vision vision, int currentLevel) {
         localTheory = findBestTheory(vision);
+        localTheory.level = currentLevel;
         System.out.println(localTheory);
         return localTheory.action.getTarget(vision);
     }
@@ -51,7 +54,7 @@ public class IntelligentAutonomousSystem {
 
 
         localTheory.postconditions.addAll(describeWorld(vision));
-        confirmTheory(localTheory, true, vision, score);
+        confirmTheory(localTheory, false, vision, score);
 
         iasMarshaller.save(this);
 
@@ -149,13 +152,15 @@ public class IntelligentAutonomousSystem {
         Theory retractionTheory = new Theory();
         retractionTheory.preconditions.addAll(localTheory.preconditions);
         retractionTheory.action = localTheory.action;
-        retractionTheory.postconditions.addAll( localTheory.postconditions.stream()
-                .filter(postcondition ->
-                                worldState.stream().anyMatch(worldStatePostconditon ->
-                                        postcondition.equals(worldStatePostconditon) || postcondition.isMoreSpecific(worldStatePostconditon))
-                )
-                .collect(toList())
+        retractionTheory.postconditions.addAll(localTheory.postconditions.stream()
+                        .filter(postcondition ->
+                                        worldState.stream().anyMatch(worldStatePostconditon ->
+                                                postcondition.equals(worldStatePostconditon) || postcondition.isMoreSpecific(worldStatePostconditon))
+                        )
+                        .collect(toList())
         );
+
+        mutantTheories.add(retractionTheory);
 
         return mutantTheories;
     }
@@ -205,15 +210,23 @@ public class IntelligentAutonomousSystem {
      */
     private Theory findBestTheory(Vision vision) {
         try {
-            return theories.stream()
+            return generalTheories.stream()
                     .filter(theory -> theory.satisfiesPreconditions(vision))
-//                    .sorted(comparing(Theory::successRatio))
                     .sorted(comparing(Theory::successRatioWithScore))
                     .findFirst()
                     .get()
                     .clonePreconditionsAndAction();
         } catch (NoSuchElementException exception) {
-            return buildLocalTheory(vision);
+            try {
+                return theories.stream()
+                        .filter(theory -> theory.satisfiesPreconditions(vision))
+                        .sorted(comparing(Theory::successRatioWithScore))
+                        .findFirst()
+                        .get()
+                        .clonePreconditionsAndAction();
+            } catch (NoSuchElementException exception2) {
+                return buildLocalTheory(vision);
+            }
         }
     }
 
@@ -250,6 +263,126 @@ public class IntelligentAutonomousSystem {
     }
 
     public void mutateBestTheories(int currentLevel) {
+        mutateBestTheories(currentLevel, currentLevel - 1);
+    }
 
+    private void mutateBestTheories(int currentLevel, int otherLevel) {
+        if (currentLevel < 2 || otherLevel < 1) {
+            System.out.println("Level " + otherLevel + " doesn't exist. Cannot mutate.");
+            return;
+        }
+
+        Theory bestTheoryFromOtherLevel;
+        Theory bestTheoryFromCurrentLevel;
+
+        try {
+            bestTheoryFromOtherLevel = theories.stream()
+                    .filter(theory -> theory.level == otherLevel)
+                    .sorted(comparing(Theory::successRatioWithScore))
+                    .findFirst()
+                    .get();
+
+        } catch (NoSuchElementException exception) {
+            System.out.println("No good enough theories found for current level: " + currentLevel + ". Cannot mutate.");
+            return;
+        }
+
+        try {
+            bestTheoryFromCurrentLevel = theories.stream()
+                    .filter(theory -> theory.level == currentLevel)
+                    .filter(theory -> theory.action.equals(bestTheoryFromOtherLevel.action) )
+                    .sorted(comparing(Theory::successRatioWithScore))
+                    .findFirst()
+                    .get();
+
+        } catch (NoSuchElementException exception) {
+            System.out.println("No theories found for current level (" + currentLevel + ") with same action than " +
+                    "the best from the previous level. Will try with two levels before");
+            mutateBestTheories(currentLevel, otherLevel - 1);
+            return;
+        }
+
+        Theory mutatedTheory = generalizeTheories(bestTheoryFromOtherLevel, bestTheoryFromCurrentLevel);
+
+        if (mutatedTheory != null) {
+            System.out.println("Mutated theory: ");
+            System.out.println(mutatedTheory);
+            generalTheories.add(mutatedTheory);
+            iasMarshaller.save(this);
+        } else {
+            System.out.println("Couldn't mutate theories from levels " + currentLevel + " and " + otherLevel);
+        }
+    }
+
+    private Theory generalizeTheories(Theory theory1, Theory theory2) {
+        Theory mutatedTheory = new Theory();
+
+        System.out.println("About to mutate theories: " + theory1 + " and " + theory2);
+
+        // If the theories doesn't have the same action, then we cannot mutate
+        if (!theory1.action.equals(theory2.action)) {
+            System.out.println("Best theories from current and previous level have different actions. Cannot mutate.");
+            return null;
+        }
+
+        mutatedTheory.preconditions = new ArrayList<>();
+        mutatedTheory.action = theory2.action;
+        mutatedTheory.postconditions = new ArrayList<>();
+
+        // For every condition that has the same count of type, create a new condition that requires at least
+        // the lesser count of that type
+        for (TheoryCondition theoryCondition : theory2.preconditions) {
+            CountTheoryCondition countConditionTheory2 = (CountTheoryCondition) theoryCondition;
+            CountTheoryCondition countConditionTheory1 = null;
+            int i = 0;
+
+            while (countConditionTheory1 == null && i < theory1.preconditions.size()) {
+                countConditionTheory1 = (CountTheoryCondition) theory1.preconditions.get(i++);
+
+                if (countConditionTheory2.type != countConditionTheory1.type) {
+                    countConditionTheory1 = null;
+                }
+            }
+
+            if (countConditionTheory1 != null) {
+                CountTheoryCondition condition = new CountTheoryCondition()
+                        .atLeast(Math.min(countConditionTheory1.count, countConditionTheory2.count))
+                        .ofType(countConditionTheory2.type);
+
+                mutatedTheory.preconditions.add(condition);
+            }
+        }
+
+        // For every condition that has the same count of type, create a new condition that requires at least
+        // the lesser count of that type
+        for (TheoryCondition theoryCondition : theory2.postconditions) {
+            CountTheoryCondition countConditionTheory2 = (CountTheoryCondition) theoryCondition;
+            CountTheoryCondition countConditionTheory1 = null;
+            int i = 0;
+
+            while (countConditionTheory1 == null && i < theory1.postconditions.size()) {
+                countConditionTheory1 = (CountTheoryCondition) theory1.postconditions.get(i++);
+
+                if (countConditionTheory2.type != countConditionTheory1.type) {
+                    countConditionTheory1 = null;
+                }
+            }
+
+            if (countConditionTheory1 != null) {
+                CountTheoryCondition condition = new CountTheoryCondition()
+                        .atLeast(Math.min(countConditionTheory1.count, countConditionTheory2.count))
+                        .ofType(countConditionTheory2.type);
+
+                mutatedTheory.postconditions.add(condition);
+            }
+        }
+
+        // If the theories doesn't have preconditions or postconditions in common, then we cannot mutate
+        if (mutatedTheory.preconditions.size() == 0 || mutatedTheory.postconditions.size() == 0 ) {
+            System.out.println("Best theories from current and previous level have no matching conditions. Cannot mutate.");
+            return null;
+        }
+
+        return mutatedTheory;
     }
 }

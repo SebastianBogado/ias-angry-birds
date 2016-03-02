@@ -51,6 +51,7 @@ public class IASMarshaller {
 
     public void save(IntelligentAutonomousSystem intelligentAutonomousSystem) {
         try( PrintWriter out = new PrintWriter( filename ) ){
+            System.out.println("Saving to " + filename + "... ");
             out.print(gson.toJson(intelligentAutonomousSystem));
         } catch (FileNotFoundException e) {
             System.out.println("ERROR while saving to " + filename + ", file not found. " + e.getMessage());

@@ -108,6 +108,6 @@ public class CountTheoryCondition implements TheoryCondition {
 
     @Override
     public String toString() {
-        return "There are: " + (count == ANY_COUNT ? " any " : count) + " of type " + type.name();
+        return "There are: " + (greaterOrEqualThan ? "at least " : "") + (count == ANY_COUNT ? " any " : count) + " of type " + type.name();
     }
 }

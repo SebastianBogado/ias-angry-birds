@@ -28,8 +28,8 @@ public class IntelligentAutonomousAgent implements Runnable {
     private IntelligentAutonomousSystem ias;
     private boolean firstShotInLevel = true;
 
-    private int timesWonSameLevel = 0;
-    private static int MAX_LEVEL_ITERATION = 50;
+    private int timesOnSameLevel = 0;
+    private static int MAX_LEVEL_ITERATION = 1;
 
     public static String THEORIES_FILE = "theories.json";
 
@@ -53,16 +53,23 @@ public class IntelligentAutonomousAgent implements Runnable {
                 case WON:
                     int totalScore = processWin();
 
-                    if (++timesWonSameLevel == MAX_LEVEL_ITERATION) {
-                        currentLevel++;
-                        timesWonSameLevel = 0;
-                        ias.mutateBestTheories(currentLevel);
+                    if (++timesOnSameLevel == MAX_LEVEL_ITERATION) {
+                        timesOnSameLevel = 0;
+                        ias.mutateBestTheories(currentLevel++);
                     }
 
                     loadLevel("Total Score: " + totalScore, currentLevel);
                     break;
                 case LOST:
-                    restartLevel();
+
+                    if (++timesOnSameLevel == MAX_LEVEL_ITERATION) {
+                        timesOnSameLevel = 0;
+                        ias.mutateBestTheories(currentLevel++);
+                        reloadFromMenu("Can't win this level (" + (currentLevel - 1)+ "), moving on", currentLevel);
+                    } else {
+                        restartLevel();
+                    }
+
                     break;
                 case MAIN_MENU:
                     reloadFromMenu("Unexpected main menu page, go to the last current level : " + currentLevel, currentLevel);
@@ -169,7 +176,7 @@ public class IntelligentAutonomousAgent implements Runnable {
                 int dx,dy;
                 {
                     // let the IAS decide where to shoot
-                    Point target = ias.getTarget(vision);
+                    Point target = ias.getTarget(vision, currentLevel);
 
                     // estimate the trajectory
                     ArrayList<Point> pts = tp.estimateLaunchPoint(sling, target);
